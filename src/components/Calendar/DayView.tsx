@@ -28,9 +28,13 @@ export default function DayView({ date }: Props) {
 
   const getSlotsForHour = (hour: number) => {
     return slots.filter((s) => {
-      const startH = parseInt(s.startTime.split(':')[0])
-      const endH = parseInt(s.endTime.split(':')[0])
-      return startH <= hour && endH > hour
+      const [startH, startM] = s.startTime.split(':').map(Number)
+      const [endH, endM] = s.endTime.split(':').map(Number)
+      const slotStart = startH * 60 + startM
+      const slotEnd = endH * 60 + endM
+      const hourStart = hour * 60
+      const hourEnd = (hour + 1) * 60
+      return slotStart < hourEnd && slotEnd > hourStart
     })
   }
 

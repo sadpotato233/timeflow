@@ -21,9 +21,9 @@ export default function WeekView({ weekStart }: Props) {
   const getSlotsForDayHour = (dateStr: string, hour: number) => {
     return slots.filter((s) => {
       if (s.date !== dateStr) return false
-      const startH = parseInt(s.startTime.split(':')[0])
-      const endH = parseInt(s.endTime.split(':')[0])
-      return startH <= hour && endH > hour
+      const [startH, startM] = s.startTime.split(':').map(Number)
+      const [endH, endM] = s.endTime.split(':').map(Number)
+      return (startH * 60 + startM) < (hour + 1) * 60 && (endH * 60 + endM) > hour * 60
     })
   }
 
