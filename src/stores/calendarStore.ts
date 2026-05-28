@@ -12,7 +12,7 @@ interface CalendarStore {
     date: string,
     startTime: string,
     estimatedMinutes: number
-  ) => Promise<CalendarSlot>
+  ) => CalendarSlot
   removeSlot: (id: string) => Promise<void>
   updateSlot: (id: string, patch: Partial<CalendarSlot>) => Promise<void>
   getSlotsByDate: (date: string) => CalendarSlot[]
@@ -35,7 +35,7 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
     set({ slots, loaded: true })
   },
 
-  placeTask: async (taskId, date, startTime, estimatedMinutes) => {
+  placeTask: (taskId, date, startTime, estimatedMinutes) => {
     const endTime = calcEndTime(startTime, estimatedMinutes)
     const slot: CalendarSlot = {
       id: uuidv4(),
@@ -46,8 +46,10 @@ export const useCalendarStore = create<CalendarStore>((set, get) => ({
       actualStartTime: null,
       actualEndTime: null,
     }
-    await db.slots.add(slot)
+    // Sync store update FIRST — guarantees React re-render
     set({ slots: [...get().slots, slot] })
+    // Persist to DB as fire-and-forget
+    db.slots.add(slot).catch((e) => console.error('[placeTask] DB write failed:', e))
     return slot
   },
 

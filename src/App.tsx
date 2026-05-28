@@ -89,7 +89,7 @@ export default function App() {
 
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 })
 
-  const handleDragEnd = async (event: any) => {
+  const handleDragEnd = (event: any) => {
     setActiveDrag(null)
     const { active, over } = event
     
@@ -105,15 +105,9 @@ export default function App() {
     const dropStartTime = over.data.current?.startTime
 
     if (taskId && dropDate && dropStartTime && estimatedMinutes) {
-      try {
-        await placeTask(taskId, dropDate, dropStartTime, estimatedMinutes)
-        setDebugMsg(`✅ Placed task at ${dropDate} ${dropStartTime}`)
-        setDropTick(t => t + 1)  // force DayView remount
-      } catch (err: any) {
-        const msg = `❌ DB Error: ${err?.message || err?.toString() || 'unknown'}`
-        setDebugMsg(msg)
-        console.error('placeTask failed:', err)
-      }
+      placeTask(taskId, dropDate, dropStartTime, estimatedMinutes)
+      setDebugMsg(`✅ Placed task at ${dropDate} ${dropStartTime} (store slots: ${useCalendarStore.getState().slots.length})`)
+      setDropTick(t => t + 1)  // force DayView remount
     } else {
       const msg = `❌ Missing data: taskId=${taskId} date=${dropDate} time=${dropStartTime}`
       setDebugMsg(msg)
