@@ -13,7 +13,8 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i)
 export default function DayView({ date }: Props) {
   const dateStr = format(date, 'yyyy-MM-dd')
   const tasks = useTaskStore((s) => s.tasks)
-  const slots = useCalendarStore((s) => s.slots.filter((sl) => sl.date === dateStr))
+  const allSlots = useCalendarStore((s) => s.slots)
+  const slots = allSlots.filter((sl) => sl.date === dateStr)
   const startTimer = useTimerStore((s) => s.startTimer)
   const updateSlot = useCalendarStore((s) => s.updateSlot)
 

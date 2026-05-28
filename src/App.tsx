@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Component, type ReactNode } from 'react'
 import { DndContext, DragOverlay, pointerWithin } from '@dnd-kit/core'
 import { startOfWeek } from 'date-fns'
-import { GoogleOAuthProvider } from '@react-oauth/google'
 import { useTaskStore } from './stores/taskStore'
 import { useCalendarStore } from './stores/calendarStore'
 import type { CalendarView } from './types'
@@ -13,7 +12,46 @@ import WeekView from './components/Calendar/WeekView'
 import TaskTree from './components/Sidebar/TaskTree'
 import ActiveTimerBar from './components/Timer/ActiveTimer'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+class ErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  { hasError: boolean; error: any }
+> {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error }
+  }
+  render() {
+    if (this.state.hasError) {
+      const e = this.state.error
+      const msg = e?.message || e?.toString() || JSON.stringify(e) || 'Unknown'
+      const stack = e?.stack || ''
+      return (
+        this.props.fallback || (
+          <div style={{ padding: 20, background: '#FEE2E2', color: '#DC2626', maxWidth: 700, margin: '20px auto', borderRadius: 8, fontFamily: 'monospace', fontSize: 13 }}>
+            <strong>Component Error:</strong>
+            <pre style={{ marginTop: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg}</pre>
+            {stack && (
+              <details style={{ marginTop: 8 }}>
+                <summary style={{ cursor: 'pointer', color: '#991B1B' }}>Stack Trace</summary>
+                <pre style={{ marginTop: 4, fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 300, overflow: 'auto' }}>{stack}</pre>
+              </details>
+            )}
+            <button
+              style={{ marginTop: 12, padding: '6px 16px', cursor: 'pointer', background: '#DC2626', color: 'white', border: 'none', borderRadius: 6 }}
+              onClick={() => this.setState({ hasError: false })}
+            >
+              Retry
+            </button>
+          </div>
+        )
+      )
+    }
+    return this.props.children
+  }
+}
 
 export default function App() {
   const [view, setView] = useState<CalendarView>('day')
@@ -58,63 +96,48 @@ export default function App() {
     }
   }
 
-  const content = (
-    <DndContext
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      collisionDetection={pointerWithin}
-    >
-      <div className="h-screen flex flex-col overflow-hidden">
-        {/* Toolbar */}
-        <Toolbar />
+  return (
+    <ErrorBoundary>
+      <DndContext
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        collisionDetection={pointerWithin}
+      >
+        <div className="h-screen flex flex-col overflow-hidden bg-white">
+          <Toolbar />
 
-        {/* Main content */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          <aside className="w-72 flex-shrink-0 border-r border-gray-200 bg-gray-50 flex flex-col overflow-hidden">
-            <TaskTree />
-          </aside>
+          <div className="flex flex-1 overflow-hidden">
+            <aside className="w-72 flex-shrink-0 border-r border-gray-200 bg-gray-50 flex flex-col overflow-hidden">
+              <TaskTree />
+            </aside>
 
-          {/* Calendar */}
-          <main className="flex-1 flex flex-col overflow-hidden">
-            <CalendarHeader
-              view={view}
-              setView={setView}
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
-            />
+            <main className="flex-1 flex flex-col overflow-hidden">
+              <CalendarHeader
+                view={view}
+                setView={setView}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+              />
 
-            {view === 'day' ? (
-              <DayView date={selectedDate} />
-            ) : (
-              <WeekView weekStart={weekStart} />
-            )}
-          </main>
+              {view === 'day' ? (
+                <DayView date={selectedDate} />
+              ) : (
+                <WeekView weekStart={weekStart} />
+              )}
+            </main>
+          </div>
+
+          <ActiveTimerBar />
         </div>
 
-        {/* Timer bar */}
-        <ActiveTimerBar />
-      </div>
-
-      {/* Drag overlay */}
-      <DragOverlay>
-        {activeDrag ? (
-          <div className="px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded shadow-lg opacity-90">
-            {activeDrag.taskName}
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+        <DragOverlay>
+          {activeDrag ? (
+            <div className="px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded shadow-lg opacity-90">
+              {activeDrag.taskName}
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </ErrorBoundary>
   )
-
-  // Only wrap in GoogleOAuthProvider if we have a client ID
-  if (GOOGLE_CLIENT_ID) {
-    return (
-      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        {content}
-      </GoogleOAuthProvider>
-    )
-  }
-
-  return content
 }
