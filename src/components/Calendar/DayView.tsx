@@ -1,4 +1,5 @@
 import { format } from 'date-fns'
+import { useEffect, useRef, useState } from 'react'
 import { useTaskStore } from '../../stores/taskStore'
 import { useCalendarStore } from '../../stores/calendarStore'
 import { useTimerStore } from '../../stores/timerStore'
@@ -17,6 +18,13 @@ export default function DayView({ date }: Props) {
   const slots = allSlots.filter((sl) => sl.date === dateStr)
   const startTimer = useTimerStore((s) => s.startTimer)
   const updateSlot = useCalendarStore((s) => s.updateSlot)
+
+  const renderCount = useRef(0)
+  renderCount.current++
+  const [storeSnap, setStoreSnap] = useState({ total: 0, matching: 0 })
+  useEffect(() => {
+    setStoreSnap({ total: allSlots.length, matching: slots.length })
+  }, [allSlots, slots.length])
 
   const getSlotsForHour = (hour: number) => {
     return slots.filter((s) => {
@@ -40,8 +48,9 @@ export default function DayView({ date }: Props) {
   return (
     <div className="flex-1 overflow-y-auto">
       {/* Time labels row */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 px-2 py-1 text-[10px] text-gray-400">
-        All-day / Timed
+      <div className="sticky top-0 bg-white border-b border-gray-200 px-2 py-1 text-[10px] text-gray-400 flex justify-between">
+        <span>All-day / Timed</span>
+        <span className="text-blue-500">R{renderCount.current} | S{storeSnap.total}/{storeSnap.matching}</span>
       </div>
 
       {HOURS.map((hour) => (

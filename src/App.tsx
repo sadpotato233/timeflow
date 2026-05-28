@@ -1,4 +1,4 @@
-import { useState, useEffect, Component, type ReactNode } from 'react'
+import { useState, useEffect, Component, type ReactNode, useRef } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -80,6 +80,7 @@ export default function App() {
   const tasks = useTaskStore((s) => s.tasks)
 
   const [debugMsg, setDebugMsg] = useState<string>('')
+  const [dropTick, setDropTick] = useState(0)
 
   useEffect(() => {
     loadTasks()
@@ -107,6 +108,7 @@ export default function App() {
       try {
         await placeTask(taskId, dropDate, dropStartTime, estimatedMinutes)
         setDebugMsg(`✅ Placed task at ${dropDate} ${dropStartTime}`)
+        setDropTick(t => t + 1)  // force DayView remount
       } catch (err: any) {
         const msg = `❌ DB Error: ${err?.message || err?.toString() || 'unknown'}`
         setDebugMsg(msg)
@@ -159,9 +161,9 @@ export default function App() {
               />
 
               {view === 'day' ? (
-                <DayView date={selectedDate} />
+                <DayView key={dropTick} date={selectedDate} />
               ) : (
-                <WeekView weekStart={weekStart} />
+                <WeekView key={dropTick} weekStart={weekStart} />
               )}
             </main>
           </div>

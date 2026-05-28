@@ -7,7 +7,7 @@ export default function Toolbar() {
 
   return (
     <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-white">
-      <h1 className="text-sm font-bold text-blue-600 mr-2">🦐 TimeFlow</h1>
+      <h1 className="text-sm font-bold text-blue-600 mr-2">🦐 TimeFlow <span className="text-[10px] font-normal text-gray-400">slots:{slots.length}</span></h1>
       <button
         onClick={() => downloadIcsFile(slots)}
         className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
