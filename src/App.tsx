@@ -88,15 +88,13 @@ export default function App() {
 
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 })
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = async (event: any) => {
     setActiveDrag(null)
     const { active, over } = event
     
     if (!over) {
-      const msg = `⚠️ Drop missed — over=null. Active=${JSON.stringify(active?.data?.current)}
-HINT: try dropping on the hour rows in the calendar`
+      const msg = `⚠️ Drop missed — try dropping on the hour rows`
       setDebugMsg(msg)
-      console.warn(msg)
       return
     }
 
@@ -105,15 +103,18 @@ HINT: try dropping on the hour rows in the calendar`
     const dropDate = over.data.current?.date
     const dropStartTime = over.data.current?.startTime
 
-    console.log('Drag ended:', { taskId, estimatedMinutes, dropDate, dropStartTime, activeData: active.data.current, overData: over.data.current })
-
     if (taskId && dropDate && dropStartTime && estimatedMinutes) {
-      setDebugMsg(`✅ Placed task at ${dropDate} ${dropStartTime}`)
-      placeTask(taskId, dropDate, dropStartTime, estimatedMinutes)
+      try {
+        await placeTask(taskId, dropDate, dropStartTime, estimatedMinutes)
+        setDebugMsg(`✅ Placed task at ${dropDate} ${dropStartTime}`)
+      } catch (err: any) {
+        const msg = `❌ DB Error: ${err?.message || err?.toString() || 'unknown'}`
+        setDebugMsg(msg)
+        console.error('placeTask failed:', err)
+      }
     } else {
-      const msg = `❌ Missing data: taskId=${taskId} date=${dropDate} time=${dropStartTime} mins=${estimatedMinutes}`
+      const msg = `❌ Missing data: taskId=${taskId} date=${dropDate} time=${dropStartTime}`
       setDebugMsg(msg)
-      console.warn(msg, { overData: over.data.current })
     }
   }
 
