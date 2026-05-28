@@ -1,5 +1,13 @@
 import { useState, useEffect, Component, type ReactNode } from 'react'
-import { DndContext, DragOverlay, pointerWithin } from '@dnd-kit/core'
+import {
+  DndContext,
+  DragOverlay,
+  pointerWithin,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
 import { startOfWeek } from 'date-fns'
 import { useTaskStore } from './stores/taskStore'
 import { useCalendarStore } from './stores/calendarStore'
@@ -54,6 +62,11 @@ class ErrorBoundary extends Component<
 }
 
 export default function App() {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  )
+
   const [view, setView] = useState<CalendarView>('day')
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [activeDrag, setActiveDrag] = useState<{
@@ -99,6 +112,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <DndContext
+        sensors={sensors}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         collisionDetection={pointerWithin}
