@@ -2,7 +2,7 @@ import { useState, useEffect, Component, type ReactNode } from 'react'
 import {
   DndContext,
   DragOverlay,
-  pointerWithin,
+  closestCorners,
   PointerSensor,
   KeyboardSensor,
   useSensor,
@@ -79,6 +79,8 @@ export default function App() {
   const placeTask = useCalendarStore((s) => s.placeTask)
   const tasks = useTaskStore((s) => s.tasks)
 
+  const [debugMsg, setDebugMsg] = useState<string>('')
+
   useEffect(() => {
     loadTasks()
     loadSlots()
@@ -89,15 +91,36 @@ export default function App() {
   const handleDragEnd = (event: any) => {
     setActiveDrag(null)
     const { active, over } = event
-    if (!over) return
+    
+    if (!over) {
+      const msg = `⚠️ Drop missed — over=null. Active=${JSON.stringify(active?.data?.current)}
+HINT: try dropping on the hour rows in the calendar`
+      setDebugMsg(msg)
+      console.warn(msg)
+      return
+    }
 
     const taskId = active.data.current?.taskId
     const estimatedMinutes = active.data.current?.estimatedMinutes
     const dropDate = over.data.current?.date
     const dropStartTime = over.data.current?.startTime
 
+    console.log('Drag ended:', { taskId, estimatedMinutes, dropDate, dropStartTime, activeData: active.data.current, overData: over.data.current })
+
     if (taskId && dropDate && dropStartTime && estimatedMinutes) {
+      setDebugMsg(`✅ Placed task at ${dropDate} ${dropStartTime}`)
       placeTask(taskId, dropDate, dropStartTime, estimatedMinutes)
+    } else {
+      const msg = `❌ Missing data: taskId=${taskId} date=${dropDate} time=${dropStartTime} mins=${estimatedMinutes}`
+      setDebugMsg(msg)
+      console.warn(msg, { overData: over.data.current })
+    }
+  }
+
+  const handleDragOver = (event: any) => {
+    const { over } = event
+    if (over) {
+      setDebugMsg(`📍 Over: ${over.data.current?.date || '?'} ${over.data.current?.startTime || '?'}`)
     }
   }
 
@@ -114,8 +137,9 @@ export default function App() {
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
-        collisionDetection={pointerWithin}
+        collisionDetection={closestCorners}
       >
         <div className="h-screen flex flex-col overflow-hidden bg-white">
           <Toolbar />
@@ -142,6 +166,19 @@ export default function App() {
           </div>
 
           <ActiveTimerBar />
+
+          {debugMsg && (
+            <div style={{
+              position: 'fixed', bottom: 72, left: '50%', transform: 'translateX(-50%)',
+              background: debugMsg.startsWith('✅') ? '#DCFCE7' : debugMsg.startsWith('📍') ? '#DBEAFE' : '#FEF3C7',
+              color: '#1F2937', padding: '8px 16px', borderRadius: 8,
+              fontSize: 12, fontFamily: 'monospace', zIndex: 100,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)', maxWidth: '90%', textAlign: 'center',
+              whiteSpace: 'pre-line'
+            }}>
+              {debugMsg}
+            </div>
+          )}
         </div>
 
         <DragOverlay>
