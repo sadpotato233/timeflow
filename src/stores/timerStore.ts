@@ -4,7 +4,7 @@ import type { ActiveTimer, TimerType } from '../types'
 interface TimerStore {
   activeTimer: ActiveTimer | null
   overtimedTasks: Set<string> // taskIds whose countdown reached zero
-  startTimer: (taskId: string, slotId: string, estimatedMinutes: number) => void
+  startTimer: (taskId: string, slotId: string, estimatedMinutes: number, customStartTimestamp?: number) => void
   pauseTimer: () => void
   resumeTimer: () => void
   stopTimer: () => void
@@ -16,15 +16,17 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   activeTimer: null,
   overtimedTasks: new Set(),
 
-  startTimer: (taskId, slotId, estimatedMinutes) => {
+  startTimer: (taskId, slotId, estimatedMinutes, customStartTimestamp) => {
+    const startTimestamp = customStartTimestamp ?? Date.now()
+    const preElapsed = Math.max(0, Math.floor((Date.now() - startTimestamp) / 1000))
     set({
       activeTimer: {
         taskId,
         slotId,
-        type: 'countdown',
-        elapsedSeconds: 0,
+        type: preElapsed >= estimatedMinutes * 60 ? 'countup' : 'countdown',
+        elapsedSeconds: preElapsed,
         totalEstimatedSeconds: estimatedMinutes * 60,
-        startTimestamp: Date.now(),
+        startTimestamp,
       },
     })
   },

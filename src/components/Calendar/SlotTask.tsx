@@ -1,14 +1,16 @@
+import { useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { Play, Check, X, Clock } from 'lucide-react'
 import { useTaskStore } from '../../stores/taskStore'
 import { useCalendarStore } from '../../stores/calendarStore'
 import { useTimerStore } from '../../stores/timerStore'
+import StartTimerDialog from '../Timer/StartTimerDialog'
 import type { CalendarSlot, Task } from '../../types'
 
 interface Props {
   slot: CalendarSlot
   task: Task
-  onStart: () => void
+  onStart: (customStartTimestamp?: number) => void
 }
 
 const STATUS_BG: Record<string, string> = {
@@ -19,6 +21,7 @@ const STATUS_BG: Record<string, string> = {
 }
 
 export default function SlotTask({ slot, task, onStart }: Props) {
+  const [showStartDialog, setShowStartDialog] = useState(false)
   const setTaskStatus = useTaskStore((s) => s.setTaskStatus)
   const updateSlot = useCalendarStore((s) => s.updateSlot)
   const overtimedTasks = useTimerStore((s) => s.overtimedTasks)
@@ -49,7 +52,7 @@ export default function SlotTask({ slot, task, onStart }: Props) {
         {task.status === 'todo' && (
           <div className="flex gap-0.5">
             <button
-              onClick={onStart}
+              onClick={() => setShowStartDialog(true)}
               className="p-0.5 rounded bg-green-500 text-white hover:bg-green-600"
               title="Start"
             >
@@ -92,6 +95,18 @@ export default function SlotTask({ slot, task, onStart }: Props) {
           )}
         </span>
       </div>
+
+      {showStartDialog && (
+        <StartTimerDialog
+          taskName={task.name}
+          slotStartTime={slot.startTime}
+          onConfirm={(customStartTimestamp) => {
+            setShowStartDialog(false)
+            onStart(customStartTimestamp)
+          }}
+          onCancel={() => setShowStartDialog(false)}
+        />
+      )}
     </div>
   )
 }

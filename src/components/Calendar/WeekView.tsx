@@ -27,15 +27,16 @@ export default function WeekView({ weekStart }: Props) {
     })
   }
 
-  const handleStart = async (slotId: string, taskId: string) => {
+  const handleStart = async (slotId: string, taskId: string, customStartTimestamp?: number) => {
     const task = tasks.find((t) => t.id === taskId)
     if (!task) return
-    const now = new Date().toLocaleTimeString('en-GB', {
+    const startDate = customStartTimestamp ? new Date(customStartTimestamp) : new Date()
+    const startTimeStr = startDate.toLocaleTimeString('en-GB', {
       hour: '2-digit',
       minute: '2-digit',
     })
-    await updateSlot(slotId, { actualStartTime: now })
-    startTimer(taskId, slotId, task.estimatedMinutes)
+    await updateSlot(slotId, { actualStartTime: startTimeStr })
+    startTimer(taskId, slotId, task.estimatedMinutes, customStartTimestamp)
   }
 
   return (
@@ -93,7 +94,7 @@ export default function WeekView({ weekStart }: Props) {
                             key={slot.id}
                             slot={slot}
                             task={task}
-                            onStart={() => handleStart(slot.id, task.id)}
+                            onStart={(customStartTimestamp) => handleStart(slot.id, task.id, customStartTimestamp)}
                           />
                         )
                       })}
