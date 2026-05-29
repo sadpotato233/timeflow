@@ -114,20 +114,21 @@ export default function SlotTask({ slot, task, onStart }: Props) {
 // Container component used in day/week views
 interface SlotContainerProps {
   date: string
-  hour: number
+  startTime: string
+  isHourStart?: boolean
   children?: React.ReactNode
 }
 
-export function TimeSlotDropZone({ date, hour, children }: SlotContainerProps) {
+export function TimeSlotDropZone({ date, startTime, isHourStart, children }: SlotContainerProps) {
   const { setNodeRef, isOver } = useDroppable({
-    id: `slot-${date}-${hour}`,
-    data: { date, startTime: `${String(hour).padStart(2, '0')}:00` },
+    id: `slot-${date}-${startTime}`,
+    data: { date, startTime },
   })
 
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[48px] border-t border-gray-100 p-0.5 ${isOver ? 'bg-blue-50' : ''} transition-colors`}
+      className={`min-h-[12px] ${isHourStart ? 'border-t border-gray-200' : 'border-t border-gray-50'} p-0.5 ${isOver ? 'bg-blue-50' : ''} transition-colors`}
     >
       {children}
     </div>

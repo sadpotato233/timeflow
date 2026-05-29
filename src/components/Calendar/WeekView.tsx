@@ -8,7 +8,22 @@ interface Props {
   weekStart: Date
 }
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i)
+const QUARTER_COUNT = 24 * 4
+
+function quarterToTime(q: number): string {
+  const h = Math.floor(q / 4)
+  const m = (q % 4) * 15
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+function isHourStart(q: number): boolean {
+  return q % 4 === 0
+}
+
+function slotStartQuarter(startTime: string): number {
+  const [h, m] = startTime.split(':').map(Number)
+  return h * 4 + Math.floor(m / 15)
+}
 
 export default function WeekView({ weekStart }: Props) {
   const tasks = useTaskStore((s) => s.tasks)
@@ -18,12 +33,16 @@ export default function WeekView({ weekStart }: Props) {
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
-  const getSlotsForDayHour = (dateStr: string, hour: number) => {
+  const getSlotsForDayQuarter = (dateStr: string, quarter: number) => {
     return slots.filter((s) => {
       if (s.date !== dateStr) return false
       const [startH, startM] = s.startTime.split(':').map(Number)
       const [endH, endM] = s.endTime.split(':').map(Number)
-      return (startH * 60 + startM) < (hour + 1) * 60 && (endH * 60 + endM) > hour * 60
+      const slotStart = startH * 60 + startM
+      const slotEnd = endH * 60 + endM
+      const quarterStart = quarter * 15
+      const quarterEnd = (quarter + 1) * 15
+      return slotStart < quarterEnd && slotEnd > quarterStart
     })
   }
 
@@ -70,41 +89,49 @@ export default function WeekView({ weekStart }: Props) {
       </div>
 
       {/* Time rows */}
-      {HOURS.map((hour) => (
-        <div key={hour} className="flex border-b border-gray-50">
-          <div className="w-14 flex-shrink-0 text-right pr-2 pt-0.5">
-            <span className="text-[10px] text-gray-400">
-              {String(hour).padStart(2, '0')}:00
-            </span>
-          </div>
+      {Array.from({ length: QUARTER_COUNT }, (_, q) => {
+        const sTime = quarterToTime(q)
+        const hourStart = isHourStart(q)
+        return (
+          <div key={q} className="flex border-b border-gray-50">
+            <div className="w-14 flex-shrink-0 text-right pr-2 pt-px">
+              {hourStart ? (
+                <span className="text-[10px] text-gray-400">{sTime}</span>
+              ) : (
+                <span className="text-[9px] text-gray-300">{sTime}</span>
+              )}
+            </div>
 
-          {days.map((day) => {
-            const dateStr = format(day, 'yyyy-MM-dd')
-            return (
-              <div key={dateStr} className="flex-1 border-l border-gray-50">
-                <TimeSlotDropZone date={dateStr} hour={hour}>
-                  <div className="flex flex-col gap-0.5">
-                    {getSlotsForDayHour(dateStr, hour)
-                      .filter((s) => parseInt(s.startTime.split(':')[0]) === hour)
-                      .map((slot) => {
-                        const task = tasks.find((t) => t.id === slot.taskId)
-                        if (!task) return null
-                        return (
-                          <SlotTask
-                            key={slot.id}
-                            slot={slot}
-                            task={task}
-                            onStart={(customStartTimestamp) => handleStart(slot.id, task.id, customStartTimestamp)}
-                          />
-                        )
-                      })}
-                  </div>
-                </TimeSlotDropZone>
-              </div>
-            )
-          })}
-        </div>
-      ))}
+            {days.map((day) => {
+              const dateStr = format(day, 'yyyy-MM-dd')
+              return (
+                <div key={dateStr} className="flex-1 border-l border-gray-50">
+                  <TimeSlotDropZone date={dateStr} startTime={sTime} isHourStart={hourStart}>
+                    <div className="flex flex-col gap-0.5">
+                      {getSlotsForDayQuarter(dateStr, q)
+                        .filter((s) => slotStartQuarter(s.startTime) === q)
+                        .map((slot) => {
+                          const task = tasks.find((t) => t.id === slot.taskId)
+                          if (!task) return null
+                          return (
+                            <SlotTask
+                              key={slot.id}
+                              slot={slot}
+                              task={task}
+                              onStart={(customStartTimestamp) =>
+                                handleStart(slot.id, task.id, customStartTimestamp)
+                              }
+                            />
+                          )
+                        })}
+                    </div>
+                  </TimeSlotDropZone>
+                </div>
+              )
+            })}
+          </div>
+        )
+      })}
     </div>
   )
 }
